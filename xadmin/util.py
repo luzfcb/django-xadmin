@@ -33,8 +33,19 @@ except ImportError:
     from django.utils.timezone import localtime as tz_localtime
 
 try:
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
+    # django 1.7 compatibility
+    if django.VERSION >= (1, 5):
+        from django.conf import settings
+        if hasattr(settings, 'AUTH_USER_MODEL'):
+            User = settings.AUTH_USER_MODEL
+        else:
+            from django.contrib.auth.models import User
+    else:
+        try:
+            from django.contrib.auth.models import User
+        except ImportError:
+            raise ImportError('User model is not to be found.')
+
     username_field = User.USERNAME_FIELD
 except Exception:
     from django.contrib.auth.models import User

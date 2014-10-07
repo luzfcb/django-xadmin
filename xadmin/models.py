@@ -15,10 +15,18 @@ from django.contrib.auth.models import Permission
 import datetime
 import decimal
 
-if 4 < django.VERSION[1] < 7:
-    AUTH_USER_MODEL = django.contrib.auth.get_user_model()
+# django 1.7 compatibility
+if django.VERSION >= (1, 5):
+    from django.conf import settings
+    if hasattr(settings, 'AUTH_USER_MODEL'):
+        User = settings.AUTH_USER_MODEL
+    else:
+        from django.contrib.auth.models import User
 else:
-    AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
+    try:
+        from django.contrib.auth.models import User
+    except ImportError:
+        raise ImportError('User model is not to be found.')
 
 
 def add_view_permissions(sender, **kwargs):
@@ -45,7 +53,7 @@ post_syncdb.connect(add_view_permissions)
 
 class Bookmark(models.Model):
     title = models.CharField(_(u'Title'), max_length=128)
-    user = models.ForeignKey(AUTH_USER_MODEL, verbose_name=_(u"user"), blank=True, null=True)
+    user = models.ForeignKey(User, verbose_name=_(u"user"), blank=True, null=True)
     url_name = models.CharField(_(u'Url Name'), max_length=64)
     content_type = models.ForeignKey(ContentType)
     query = models.CharField(_(u'Query String'), max_length=1000, blank=True)
@@ -84,7 +92,7 @@ class JSONEncoder(DjangoJSONEncoder):
 
 
 class UserSettings(models.Model):
-    user = models.ForeignKey(AUTH_USER_MODEL, verbose_name=_(u"user"))
+    user = models.ForeignKey(User, verbose_name=_(u"user"))
     key = models.CharField(_('Settings Key'), max_length=256)
     value = models.TextField(_('Settings Content'))
 
@@ -103,7 +111,7 @@ class UserSettings(models.Model):
 
 
 class UserWidget(models.Model):
-    user = models.ForeignKey(AUTH_USER_MODEL, verbose_name=_(u"user"))
+    user = models.ForeignKey(User, verbose_name=_(u"user"))
     page_id = models.CharField(_(u"Page"), max_length=256)
     widget_type = models.CharField(_(u"Widget Type"), max_length=50)
     value = models.TextField(_(u"Widget Params"))
@@ -135,3 +143,4 @@ class UserWidget(models.Model):
     class Meta:
         verbose_name = _(u'User Widget')
         verbose_name_plural = _('User Widgets')
+
