@@ -1,6 +1,7 @@
 import StringIO
 import datetime
 import sys
+import django
 
 from django.http import HttpResponse
 from django.template import loader
@@ -214,8 +215,16 @@ class ExportPlugin(BaseAdminPlugin):
 
     def get_response(self, response, context, *args, **kwargs):
         file_type = self.request.GET.get('export_type', 'csv')
-        response = HttpResponse(
-            mimetype="%s; charset=UTF-8" % self.export_mimes[file_type])
+        
+        # django 1.7 compatibility
+        # https://docs.djangoproject.com/en/1.7/internals/deprecation/#deprecation-removed-in-1-7
+        if django.VERSION >= (1, 7):
+            response = HttpResponse(
+                content_type="%s; charset=UTF-8" % self.export_mimes[file_type])
+        else:
+            response = HttpResponse(
+                mimetype="%s; charset=UTF-8" % self.export_mimes[file_type])
+
 
         file_name = self.opts.verbose_name.replace(' ', '_')
         response['Content-Disposition'] = ('attachment; filename=%s.%s' % (
